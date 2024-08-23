@@ -5,10 +5,9 @@
 #include <string>
 #include <vector>
 
-namespace ocppi::runtime
-{
+namespace ocppi::runtime {
 struct GlobalOption {
-        std::optional<std::filesystem::path> root;
-        std::vector<std::string> extra;
+  std::optional<std::filesystem::path> root;
+  std::vector<std::string> extra;
 };
-}
+}  // namespace ocppi::runtime

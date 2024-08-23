@@ -1,9 +1,8 @@
 #pragma once
 
-namespace ocppi::runtime
-{
+namespace ocppi::runtime {
 
 constexpr auto oci_runtime_spec_min = "@OCPPI_OCI_RUNTIME_SPEC_MIN@";
 constexpr auto oci_runtime_spec_max = "@OCPPI_OCI_RUNTIME_SPEC_MAX@";
 
-}
+}  // namespace ocppi::runtime

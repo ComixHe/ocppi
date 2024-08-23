@@ -2,8 +2,7 @@
 
 #include <string>
 
-namespace ocppi::runtime
-{
+namespace ocppi::runtime {
 
 using ContainerID = std::string;
 

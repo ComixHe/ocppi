@@ -5,21 +5,19 @@
 
 #include "nlohmann/json.hpp"
 #include "ocppi/runtime/config/types/Config.hpp"
-#include "ocppi/runtime/config/types/Generators.hpp" // IWYU pragma: keep
+#include "ocppi/runtime/config/types/Generators.hpp"  // IWYU pragma: keep
 
-void printException(std::string_view msg, std::exception_ptr ptr) noexcept
-try {
-        std::rethrow_exception(ptr);
+void printException(std::string_view msg, std::exception_ptr ptr) noexcept try {
+  std::rethrow_exception(ptr);
 } catch (const std::exception &e) {
-        std::cerr << msg << ": " << e.what() << std::endl;
+  std::cerr << msg << ": " << e.what() << std::endl;
 } catch (...) {
-        std::cerr << msg << ": unknown exception" << std::endl;
+  std::cerr << msg << ": unknown exception" << std::endl;
 }
 
-int main()
-{
-        try {
-                auto j = nlohmann::json::parse(R"(
+int main() {
+  try {
+    auto j = nlohmann::json::parse(R"(
 {
     "ociVersion": "1.0.1",
     "process": {
@@ -411,18 +409,16 @@ int main()
     }
 })");
 
-                ocppi::runtime::config::types::Config cfg =
-                        j.get<ocppi::runtime::config::types::Config>();
+    ocppi::runtime::config::types::Config cfg =
+        j.get<ocppi::runtime::config::types::Config>();
 
-                std::cerr << "OCI runtime config version: " << cfg.ociVersion
-                          << std::endl;
-                std::cerr << "Parsed OCI runtime config: "
-                          << nlohmann::json(cfg).dump() << std::endl;
-        } catch (...) {
-                printException("Parse OCI runtime config",
-                               std::current_exception());
-                return -1;
-        }
+    std::cerr << "OCI runtime config version: " << cfg.ociVersion << std::endl;
+    std::cerr << "Parsed OCI runtime config: " << nlohmann::json(cfg).dump()
+              << std::endl;
+  } catch (...) {
+    printException("Parse OCI runtime config", std::current_exception());
+    return -1;
+  }
 
-        return 0;
+  return 0;
 }

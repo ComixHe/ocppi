@@ -1,15 +1,14 @@
 #pragma once
 
-#include <string> // for basic_string, string
-#include <vector> // for vector
+#include <string>  // for basic_string, string
+#include <vector>  // for vector
 
-#include "ocppi/runtime/GlobalOption.hpp" // for GlobalOption
+#include "ocppi/runtime/GlobalOption.hpp"  // for GlobalOption
 
-namespace ocppi::runtime
-{
+namespace ocppi::runtime {
 
 struct CreateOption : public GlobalOption {
-        std::vector<std::string> extra;
+  std::vector<std::string> extra;
 };
 
-}
+}  // namespace ocppi::runtime

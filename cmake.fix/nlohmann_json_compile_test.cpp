@@ -12,7 +12,4 @@
 #error require nlohmann_json compatible with 3.5.0
 #endif
 
-int main()
-{
-        return 0;
-}
+int main() { return 0; }

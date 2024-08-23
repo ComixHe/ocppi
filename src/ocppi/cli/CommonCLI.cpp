@@ -24,11 +24,11 @@
 #include "ocppi/runtime/Signal.hpp"
 #include "ocppi/runtime/StartOption.hpp"
 #include "ocppi/runtime/StateOption.hpp"
-#include "ocppi/runtime/features/types/Generators.hpp" // IWYU pragma: keep
-#include "ocppi/runtime/state/types/Generators.hpp"    // IWYU pragma: keep
+#include "ocppi/runtime/features/types/Generators.hpp"  // IWYU pragma: keep
+#include "ocppi/runtime/state/types/Generators.hpp"     // IWYU pragma: keep
 #include "ocppi/runtime/state/types/State.hpp"
 #include "ocppi/types/ContainerListItem.hpp"
-#include "ocppi/types/Generators.hpp" // IWYU pragma: keep
+#include "ocppi/types/Generators.hpp"  // IWYU pragma: keep
 
 #ifdef OCPPI_WITH_SPDLOG
 #include <memory>
@@ -48,17 +48,14 @@
 #endif
 #endif
 
-namespace spdlog
-{
+namespace spdlog {
 class logger;
-} // namespace spdlog
+}  // namespace spdlog
 #endif
 
-namespace ocppi::cli
-{
+namespace ocppi::cli {
 
-namespace
-{
+namespace {
 
 template <typename Result>
 auto doCommand(const std::string &bin,
@@ -67,382 +64,346 @@ auto doCommand(const std::string &bin,
 #endif
                std::vector<std::string> &&globalOption,
                const std::string &command, std::vector<std::string> &&options,
-               std::vector<std::string> &&arguments) -> Result
-{
-        auto &args = globalOption;
-        args.insert(args.end(), command);
-        args.insert(args.end(), std::make_move_iterator(options.begin()),
-                    std::make_move_iterator(options.end()));
-        args.insert(args.end(), std::make_move_iterator(arguments.begin()),
-                    std::make_move_iterator(arguments.end()));
+               std::vector<std::string> &&arguments) -> Result {
+  auto &args = globalOption;
+  args.insert(args.end(), command);
+  args.insert(args.end(), std::make_move_iterator(options.begin()),
+              std::make_move_iterator(options.end()));
+  args.insert(args.end(), std::make_move_iterator(arguments.begin()),
+              std::make_move_iterator(arguments.end()));
 
 #ifdef OCPPI_WITH_SPDLOG
-        SPDLOG_LOGGER_DEBUG(logger, R"(Executing "{}" with arguments: {})", bin,
-                            args);
+  SPDLOG_LOGGER_DEBUG(logger, R"(Executing "{}" with arguments: {})", bin,
+                      args);
 #endif
 
-        if constexpr (std::is_void_v<Result>) {
-                auto ret = runProcess(bin, args);
-                if (ret != 0) {
-                        throw CommandFailedError(ret, bin);
-                }
-                return;
-        } else {
-                std::string output;
-                auto ret = runProcess(bin, args, output);
-                if (ret != 0) {
-                        throw CommandFailedError(ret, bin);
-                }
+  if constexpr (std::is_void_v<Result>) {
+    auto ret = runProcess(bin, args);
+    if (ret != 0) {
+      throw CommandFailedError(ret, bin);
+    }
+    return;
+  } else {
+    std::string output;
+    auto ret = runProcess(bin, args, output);
+    if (ret != 0) {
+      throw CommandFailedError(ret, bin);
+    }
 
-                auto json_result = nlohmann::json::parse(output);
-                return json_result.get<Result>();
-        }
+    auto json_result = nlohmann::json::parse(output);
+    return json_result.get<Result>();
+  }
 }
 
-}
+}  // namespace
 #ifdef OCPPI_WITH_SPDLOG
 
 CommonCLI::CommonCLI(std::filesystem::path bin,
                      const std::shared_ptr<spdlog::logger> &logger)
-        : bin_(std::move(bin))
-        , logger_(logger != nullptr ?
-                          logger :
-                          spdlog::create<spdlog::sinks::null_sink_st>(""))
-{
-        if (std::filesystem::exists(bin_)) {
-                return;
-        }
-        throw ExecutableNotFoundError(bin_);
+    : bin_(std::move(bin)),
+      logger_(logger != nullptr
+                  ? logger
+                  : spdlog::create<spdlog::sinks::null_sink_st>("")) {
+  if (std::filesystem::exists(bin_)) {
+    return;
+  }
+  throw ExecutableNotFoundError(bin_);
 }
 
-auto CommonCLI::logger() const -> const std::shared_ptr<spdlog::logger> &
-{
-        assert(this->logger_ != nullptr);
-        return this->logger_;
+auto CommonCLI::logger() const -> const std::shared_ptr<spdlog::logger> & {
+  assert(this->logger_ != nullptr);
+  return this->logger_;
 }
 
 #else
-CommonCLI::CommonCLI(std::filesystem::path bin)
-        : bin_(std::move(bin))
-{
-        if (std::filesystem::exists(bin_)) {
-                return;
-        }
-        throw ExecutableNotFoundError(bin_);
+CommonCLI::CommonCLI(std::filesystem::path bin) : bin_(std::move(bin)) {
+  if (std::filesystem::exists(bin_)) {
+    return;
+  }
+  throw ExecutableNotFoundError(bin_);
 }
 #endif
 
-auto CommonCLI::bin() const noexcept -> const std::filesystem::path &
-{
-        return this->bin_;
+auto CommonCLI::bin() const noexcept -> const std::filesystem::path & {
+  return this->bin_;
 }
 
 auto CommonCLI::state(const runtime::ContainerID &id) const noexcept
-        -> tl::expected<runtime::state::types::State, std::exception_ptr>
-{
-        return this->state(id, {});
+    -> tl::expected<runtime::state::types::State, std::exception_ptr> {
+  return this->state(id, {});
 }
 
 auto CommonCLI::state(const runtime::ContainerID &id,
                       const runtime::StateOption &option) const noexcept
-        -> tl::expected<runtime::state::types::State, std::exception_ptr>
-try {
-        return doCommand<runtime::state::types::State>(
-                this->bin(),
+    -> tl::expected<runtime::state::types::State, std::exception_ptr> try {
+  return doCommand<runtime::state::types::State>(
+      this->bin(),
 #ifdef OCPPI_WITH_SPDLOG
-                this->logger(),
+      this->logger(),
 #endif
-                this->generateGlobalOptions(option), "state",
-                this->generateSubcommandOptions(option), { id });
+      this->generateGlobalOptions(option), "state",
+      this->generateSubcommandOptions(option), {id});
 } catch (...) {
-        return tl::unexpected(std::current_exception());
+  return tl::unexpected(std::current_exception());
 }
 
 auto CommonCLI::create(const runtime::ContainerID &id,
                        const std::filesystem::path &pathToBundle) noexcept
-        -> tl::expected<void, std::exception_ptr>
-{
-        return this->create(id, pathToBundle, {});
+    -> tl::expected<void, std::exception_ptr> {
+  return this->create(id, pathToBundle, {});
 }
 
 auto CommonCLI::create(const runtime::ContainerID &id,
                        const std::filesystem::path &pathToBundle,
                        const runtime::CreateOption &option) noexcept
-        -> tl::expected<void, std::exception_ptr>
-try {
-        auto opt = option;
-        opt.extra.emplace_back("-b");
-        opt.extra.emplace_back(pathToBundle);
+    -> tl::expected<void, std::exception_ptr> try {
+  auto opt = option;
+  opt.extra.emplace_back("-b");
+  opt.extra.emplace_back(pathToBundle);
 
-        doCommand<void>(this->bin(),
+  doCommand<void>(this->bin(),
 #ifdef OCPPI_WITH_SPDLOG
-                        this->logger(),
+                  this->logger(),
 #endif
-                        this->generateGlobalOptions(opt), "create",
-                        this->generateSubcommandOptions(opt), { id });
-        return {};
+                  this->generateGlobalOptions(opt), "create",
+                  this->generateSubcommandOptions(opt), {id});
+  return {};
 } catch (...) {
-        return tl::unexpected(std::current_exception());
+  return tl::unexpected(std::current_exception());
 }
 
 auto CommonCLI::start(const runtime::ContainerID &id) noexcept
-        -> tl::expected<void, std::exception_ptr>
-{
-        return this->start(id, {});
+    -> tl::expected<void, std::exception_ptr> {
+  return this->start(id, {});
 }
 
 auto CommonCLI::start(const runtime::ContainerID &id,
                       const runtime::StartOption &option) noexcept
-        -> tl::expected<void, std::exception_ptr>
-try {
-        doCommand<void>(this->bin(),
+    -> tl::expected<void, std::exception_ptr> try {
+  doCommand<void>(this->bin(),
 #ifdef OCPPI_WITH_SPDLOG
-                        this->logger(),
+                  this->logger(),
 #endif
-                        this->generateGlobalOptions(option), "start",
-                        this->generateSubcommandOptions(option), { id });
-        return {};
+                  this->generateGlobalOptions(option), "start",
+                  this->generateSubcommandOptions(option), {id});
+  return {};
 } catch (...) {
-        return tl::unexpected(std::current_exception());
+  return tl::unexpected(std::current_exception());
 }
 
 auto CommonCLI::kill(const runtime::ContainerID &id,
                      const runtime::Signal &signal) noexcept
-        -> tl::expected<void, std::exception_ptr>
-{
-        return this->kill(id, signal, {});
+    -> tl::expected<void, std::exception_ptr> {
+  return this->kill(id, signal, {});
 }
 
 auto CommonCLI::kill(const runtime::ContainerID &id,
                      const runtime::Signal &signal,
                      const runtime::KillOption &option) noexcept
-        -> tl::expected<void, std::exception_ptr>
-try {
-        doCommand<void>(this->bin(),
+    -> tl::expected<void, std::exception_ptr> try {
+  doCommand<void>(this->bin(),
 #ifdef OCPPI_WITH_SPDLOG
-                        this->logger(),
+                  this->logger(),
 #endif
-                        this->generateGlobalOptions(option), "kill",
-                        this->generateSubcommandOptions(option),
-                        { id, signal });
-        return {};
+                  this->generateGlobalOptions(option), "kill",
+                  this->generateSubcommandOptions(option), {id, signal});
+  return {};
 
 } catch (...) {
-        return tl::unexpected(std::current_exception());
+  return tl::unexpected(std::current_exception());
 }
 
 auto CommonCLI::delete_(const runtime::ContainerID &id) noexcept
-        -> tl::expected<void, std::exception_ptr>
-{
-        return this->delete_(id, {});
+    -> tl::expected<void, std::exception_ptr> {
+  return this->delete_(id, {});
 }
 
 auto CommonCLI::delete_(const runtime::ContainerID &id,
                         const runtime::DeleteOption &option) noexcept
-        -> tl::expected<void, std::exception_ptr>
-try {
-        doCommand<void>(this->bin(),
+    -> tl::expected<void, std::exception_ptr> try {
+  doCommand<void>(this->bin(),
 #ifdef OCPPI_WITH_SPDLOG
-                        this->logger(),
+                  this->logger(),
 #endif
-                        this->generateGlobalOptions(option), "delete",
-                        this->generateSubcommandOptions(option), { id });
-        return {};
+                  this->generateGlobalOptions(option), "delete",
+                  this->generateSubcommandOptions(option), {id});
+  return {};
 } catch (...) {
-        return tl::unexpected(std::current_exception());
+  return tl::unexpected(std::current_exception());
 }
 
 auto CommonCLI::exec(const runtime::ContainerID &id,
                      const std::string &executable,
                      const std::vector<std::string> &command) noexcept
-        -> tl::expected<void, std::exception_ptr>
-{
-        return this->exec(id, executable, command, {});
+    -> tl::expected<void, std::exception_ptr> {
+  return this->exec(id, executable, command, {});
 }
 
 auto CommonCLI::exec(const runtime::ContainerID &id,
                      const std::string &executable,
                      const std::vector<std::string> &command,
                      const runtime::ExecOption &option) noexcept
-        -> tl::expected<void, std::exception_ptr>
-try {
-        std::vector<std::string> arguments;
-        arguments.push_back(id);
-        arguments.push_back(executable);
-        arguments.insert(arguments.end(), command.begin(), command.end());
+    -> tl::expected<void, std::exception_ptr> try {
+  std::vector<std::string> arguments;
+  arguments.push_back(id);
+  arguments.push_back(executable);
+  arguments.insert(arguments.end(), command.begin(), command.end());
 
-        doCommand<void>(this->bin(),
+  doCommand<void>(this->bin(),
 #ifdef OCPPI_WITH_SPDLOG
-                        this->logger(),
+                  this->logger(),
 #endif
-                        this->generateGlobalOptions(option), "exec",
-                        this->generateSubcommandOptions(option),
-                        std::move(arguments));
-        return {};
+                  this->generateGlobalOptions(option), "exec",
+                  this->generateSubcommandOptions(option),
+                  std::move(arguments));
+  return {};
 } catch (...) {
-        return tl::unexpected(std::current_exception());
+  return tl::unexpected(std::current_exception());
 }
 
 auto CommonCLI::list() noexcept
-        -> tl::expected<std::vector<types::ContainerListItem>,
-                        std::exception_ptr>
-{
-        return this->list({});
+    -> tl::expected<std::vector<types::ContainerListItem>, std::exception_ptr> {
+  return this->list({});
 }
 
 auto CommonCLI::list(const runtime::ListOption &option) noexcept
-        -> tl::expected<std::vector<types::ContainerListItem>,
-                        std::exception_ptr>
-try {
-        runtime::ListOption new_option = option;
-        new_option.format = runtime::ListOption::OutputFormat::Json;
+    -> tl::expected<std::vector<types::ContainerListItem>,
+                    std::exception_ptr> try {
+  runtime::ListOption new_option = option;
+  new_option.format = runtime::ListOption::OutputFormat::Json;
 
-        return doCommand<std::vector<types::ContainerListItem>>(
-                this->bin(),
+  return doCommand<std::vector<types::ContainerListItem>>(
+      this->bin(),
 #ifdef OCPPI_WITH_SPDLOG
-                this->logger(),
+      this->logger(),
 #endif
-                this->generateGlobalOptions(option), "list",
-                this->generateSubcommandOptions(option), {});
+      this->generateGlobalOptions(option), "list",
+      this->generateSubcommandOptions(option), {});
 } catch (...) {
-        return tl::unexpected(std::current_exception());
+  return tl::unexpected(std::current_exception());
 }
 
 auto CommonCLI::run(const runtime::ContainerID &id,
                     const std::filesystem::path &pathToBundle) noexcept
-        -> tl::expected<void, std::exception_ptr>
-{
-        return this->run(id, pathToBundle, {});
+    -> tl::expected<void, std::exception_ptr> {
+  return this->run(id, pathToBundle, {});
 }
 
 auto CommonCLI::run(const runtime::ContainerID &id,
                     const std::filesystem::path &pathToBundle,
                     const runtime::RunOption &option) noexcept
-        -> tl::expected<void, std::exception_ptr>
-try {
-        auto opt = option;
-        opt.extra.emplace_back("-b");
-        opt.extra.emplace_back(pathToBundle);
+    -> tl::expected<void, std::exception_ptr> try {
+  auto opt = option;
+  opt.extra.emplace_back("-b");
+  opt.extra.emplace_back(pathToBundle);
 
-        doCommand<void>(this->bin(),
+  doCommand<void>(this->bin(),
 #ifdef OCPPI_WITH_SPDLOG
-                        this->logger(),
+                  this->logger(),
 #endif
-                        this->generateGlobalOptions(opt), "run",
-                        this->generateSubcommandOptions(opt), { id });
-        return {};
+                  this->generateGlobalOptions(opt), "run",
+                  this->generateSubcommandOptions(opt), {id});
+  return {};
 } catch (...) {
-        return tl::unexpected(std::current_exception());
+  return tl::unexpected(std::current_exception());
 }
 
 auto CommonCLI::features() const noexcept
-        -> tl::expected<runtime::features::types::Features, std::exception_ptr>
-{
-        return this->features({});
+    -> tl::expected<runtime::features::types::Features, std::exception_ptr> {
+  return this->features({});
 }
 
 auto CommonCLI::features(const runtime::FeaturesOption &option) const noexcept
-        -> tl::expected<runtime::features::types::Features, std::exception_ptr>
-try {
-        return doCommand<runtime::features::types::Features>(
-                this->bin(),
+    -> tl::expected<runtime::features::types::Features,
+                    std::exception_ptr> try {
+  return doCommand<runtime::features::types::Features>(
+      this->bin(),
 #ifdef OCPPI_WITH_SPDLOG
-                this->logger(),
+      this->logger(),
 #endif
-                this->generateGlobalOptions(option), "features",
-                this->generateSubcommandOptions(option), {});
+      this->generateGlobalOptions(option), "features",
+      this->generateSubcommandOptions(option), {});
 } catch (...) {
-        return tl::unexpected(std::current_exception());
+  return tl::unexpected(std::current_exception());
 }
 
 auto CommonCLI::generateGlobalOptions(const runtime::GlobalOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        auto ret = option.extra;
-        if (option.root) {
-                ret.emplace_back("--root");
-                ret.push_back(option.root->string());
-        }
-        return ret;
+    const noexcept -> std::vector<std::string> {
+  auto ret = option.extra;
+  if (option.root) {
+    ret.emplace_back("--root");
+    ret.push_back(option.root->string());
+  }
+  return ret;
 }
 
 auto CommonCLI::generateSubcommandOptions(const runtime::CreateOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        return option.extra;
+    const noexcept -> std::vector<std::string> {
+  return option.extra;
 }
 
 auto CommonCLI::generateSubcommandOptions(const runtime::DeleteOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        return option.extra;
+    const noexcept -> std::vector<std::string> {
+  return option.extra;
 }
 
 auto CommonCLI::generateSubcommandOptions(const runtime::ExecOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        std::vector<std::string> ret = option.extra;
-        if (option.tty) {
-                ret.emplace_back("--tty");
-        }
-        if (option.cwd) {
-                ret.emplace_back("--cwd");
-                ret.push_back(option.cwd->string());
-        }
-        for (const auto &env : option.env) {
-                ret.emplace_back("--env");
-                ret.push_back(env.first + "=" + env.second);
-        }
-        if (option.uid) {
-                ret.emplace_back("--user");
-                ret.push_back(
-                        std::to_string(*option.uid) +
-                        (option.gid ? ":" + std::to_string(*option.gid) : ""));
-        }
-        return ret;
+    const noexcept -> std::vector<std::string> {
+  std::vector<std::string> ret = option.extra;
+  if (option.tty) {
+    ret.emplace_back("--tty");
+  }
+  if (option.cwd) {
+    ret.emplace_back("--cwd");
+    ret.push_back(option.cwd->string());
+  }
+  for (const auto &env : option.env) {
+    ret.emplace_back("--env");
+    ret.push_back(env.first + "=" + env.second);
+  }
+  if (option.uid) {
+    ret.emplace_back("--user");
+    ret.push_back(std::to_string(*option.uid) +
+                  (option.gid ? ":" + std::to_string(*option.gid) : ""));
+  }
+  return ret;
 }
 
 auto CommonCLI::generateSubcommandOptions(const runtime::KillOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        return option.extra;
+    const noexcept -> std::vector<std::string> {
+  return option.extra;
 }
 
 auto CommonCLI::generateSubcommandOptions(const runtime::ListOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        std::vector<std::string> ret = option.extra;
+    const noexcept -> std::vector<std::string> {
+  std::vector<std::string> ret = option.extra;
 
-        if (option.format == runtime::ListOption::OutputFormat::Json) {
-                ret.emplace_back("-f");
-                ret.emplace_back("json");
-        }
+  if (option.format == runtime::ListOption::OutputFormat::Json) {
+    ret.emplace_back("-f");
+    ret.emplace_back("json");
+  }
 
-        return ret;
+  return ret;
 }
 
 auto CommonCLI::generateSubcommandOptions(const runtime::StartOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        return option.extra;
+    const noexcept -> std::vector<std::string> {
+  return option.extra;
 }
 
 auto CommonCLI::generateSubcommandOptions(const runtime::StateOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        return option.extra;
+    const noexcept -> std::vector<std::string> {
+  return option.extra;
 }
 
 auto CommonCLI::generateSubcommandOptions(const runtime::RunOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        return option.extra;
+    const noexcept -> std::vector<std::string> {
+  return option.extra;
 }
 
 auto CommonCLI::generateSubcommandOptions(const runtime::FeaturesOption &option)
-        const noexcept -> std::vector<std::string>
-{
-        return option.extra;
+    const noexcept -> std::vector<std::string> {
+  return option.extra;
 }
 
-}
+}  // namespace ocppi::cli

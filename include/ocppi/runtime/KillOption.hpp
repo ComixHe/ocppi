@@ -5,11 +5,10 @@
 
 #include "ocppi/runtime/GlobalOption.hpp"
 
-namespace ocppi::runtime
-{
+namespace ocppi::runtime {
 
 struct KillOption : public GlobalOption {
-        std::vector<std::string> extra;
+  std::vector<std::string> extra;
 };
 
-}
+}  // namespace ocppi::runtime

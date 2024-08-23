@@ -1,7 +1,6 @@
 #pragma once
 
-namespace ocppi
-{
+namespace ocppi {
 
 constexpr auto version = "@OCPPI_SEMVER@";
 
